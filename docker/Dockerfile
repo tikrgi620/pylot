@@ -35,9 +35,9 @@ ENV DEBIAN_FRONTEND=noninteractive
 RUN sudo DEBIAN_FRONTEND=noninteractive sudo DEBIAN_FRONTEND=noninteractive apt-get install -y tzdata
 
 # Get the ERDOS package dependencies.
-RUN sudo apt-get -y install apt-utils git curl clang python-is-python3 python3-pip
-RUN python3 -m pip install --upgrade pip
-RUN python3 -m pip install setuptools setuptools-rust numpy==1.19.5
+RUN sudo apt-get -y install apt-utils git curl clang python-is-python3 python3-pip 
+RUN python3 -m pip install --upgrade pip -i http://mirrors.aliyun.com/pypi/simple/ --trusted-host mirrors.aliyun.com
+RUN python3 -m pip install setuptools setuptools-rust numpy==1.19.5 -i http://mirrors.aliyun.com/pypi/simple/ --trusted-host mirrors.aliyun.com
 
 # Setup Rust and install ERDOS.
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
@@ -45,12 +45,15 @@ ENV PATH="/home/erdos/.cargo/bin:${PATH}"
 RUN echo "export PATH=/home/erdos/.cargo/bin:${PATH}" >> ~/.bashrc
 RUN rustup default nightly
 RUN mkdir -p /home/erdos/workspace
-RUN cd /home/erdos/workspace && git clone https://github.com/erdos-project/erdos.git && cd erdos && python3 python/setup.py install
+RUN pip3 install maturin -i https://mirrors.ustc.edu.cn/pypi/simple/
+ENV PATH="/home/erdos/.local/bin:$PATH"
+RUN cd /home/erdos/workspace && git clone --depth 1 https://github.com/erdos-project/erdos.git && cd erdos/python 
+RUN cd /home/erdos/workspace/erdos && maturin develop
 
 # Set up Pylot.
 RUN sudo apt-get install -y libcudnn8 cuda-toolkit-11-4 ssh libqt5core5a libeigen3-dev cmake qtbase5-dev libpng16-16 libtiff5 python3-tk python3-pygame libgeos-dev
 # Get the Pylot directory.
-RUN cd /home/erdos/workspace && git clone https://github.com/erdos-project/pylot.git
+RUN cd /home/erdos/workspace && git clone --depth 1 https://github.com/erdos-project/pylot.git
 WORKDIR /home/erdos/workspace/pylot/
 ENV PYLOT_HOME /home/erdos/workspace/pylot/
 # Install all the Python dependencies.
@@ -59,11 +62,11 @@ RUN cd /home/erdos/workspace/pylot/ && python3 -m pip install -e ./
 RUN cd /home/erdos/workspace/pylot/ && ./install.sh
 ENV CARLA_HOME /home/erdos/workspace/pylot/dependencies/CARLA_0.9.10.1
 # Clone scenario_runner.
-RUN cd /home/erdos/workspace && git clone https://github.com/erdos-project/scenario_runner.git
+RUN cd /home/erdos/workspace && git clone --depth 1 https://github.com/erdos-project/scenario_runner.git
 # Install scenario_runner's dependencies.
 RUN python3 -m pip install py-trees==0.8.3 networkx==2.2 Shapely==1.6.4 psutil==5.7.0 xmlschema==1.0.18 ephem==3.7.6.0 tabulate==0.8.7 six==1.14.0
 # Clone leaderboard.
-RUN cd /home/erdos/workspace && git clone https://github.com/erdos-project/leaderboard.git
+RUN cd /home/erdos/workspace && git clone --depth 1 https://github.com/erdos-project/leaderboard.git
 RUN python3 -m pip install dictor requests
 
 RUN echo "export PYTHONPATH=/home/erdos/workspace/pylot/dependencies/:/home/erdos/workspace/pylot/dependencies/lanenet:/home/erdos/workspace/pylot/dependencies/CARLA_0.9.10.1/PythonAPI/carla/dist/carla-0.9.10-py3.7-linux-x86_64.egg:/home/erdos/workspace/pylot/dependencies/CARLA_0.9.10.1/PythonAPI/carla/:/home/erdos/workspace/pylot/dependencies/CARLA_0.9.10.1/PythonAPI/carla/agents/:/home/erdos/workspace/pylot/dependencies/CARLA_0.9.10.1/PythonAPI/:/home/erdos/workspace/scenario_runner" >> ~/.bashrc
